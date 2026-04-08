@@ -4,16 +4,18 @@ const levels = [
     size: 3,
     boxRows: 3,
     boxCols: 3,
-    tokens: ["🐶", "🐱", "🐰", "🐸", "🐼", "🦊", "🐵", "🐷", "🐨"],
+    highlightBox: false,
+    validateBox: false,
+    tokens: ["🐶", "🐱", "🐰"],
     solution: [
       ["🐶", "🐱", "🐰"],
-      ["🐸", "🐼", "🦊"],
-      ["🐵", "🐷", "🐨"],
+      ["🐱", "🐰", "🐶"],
+      ["🐰", "🐶", "🐱"],
     ],
     puzzle: [
       ["🐶", "", "🐰"],
-      ["", "🐼", ""],
-      ["🐵", "", "🐨"],
+      ["", "🐰", ""],
+      ["🐰", "", "🐱"],
     ],
   },
   {
@@ -88,6 +90,20 @@ function renderBoard(level, levelIndex) {
       cell.dataset.row = String(r);
       cell.dataset.col = String(c);
       cell.textContent = value;
+
+      if (r % level.boxRows === 0) {
+        cell.classList.add("box-top");
+      }
+      if (c % level.boxCols === 0) {
+        cell.classList.add("box-left");
+      }
+      if (r === level.size - 1) {
+        cell.classList.add("box-bottom");
+      }
+      if (c === level.size - 1) {
+        cell.classList.add("box-right");
+      }
+
       if (fixed) {
         cell.classList.add("fixed");
       }
@@ -193,7 +209,23 @@ function paintBoard(levelIndex) {
 }
 
 function isRelatedCell(level, selected, row, col) {
-  return selected.row === row || selected.col === col;
+  if (selected.row === row || selected.col === col) {
+    return true;
+  }
+
+  if (level.highlightBox === false) {
+    return false;
+  }
+
+  const boxStartRow = Math.floor(selected.row / level.boxRows) * level.boxRows;
+  const boxStartCol = Math.floor(selected.col / level.boxCols) * level.boxCols;
+
+  return (
+    row >= boxStartRow &&
+    row < boxStartRow + level.boxRows &&
+    col >= boxStartCol &&
+    col < boxStartCol + level.boxCols
+  );
 }
 
 function isMoveValid(levelIndex, row, col, value) {
@@ -212,16 +244,18 @@ function isMoveValid(levelIndex, row, col, value) {
     }
   }
 
-  const boxStartRow = Math.floor(row / level.boxRows) * level.boxRows;
-  const boxStartCol = Math.floor(col / level.boxCols) * level.boxCols;
+  if (level.validateBox !== false) {
+    const boxStartRow = Math.floor(row / level.boxRows) * level.boxRows;
+    const boxStartCol = Math.floor(col / level.boxCols) * level.boxCols;
 
-  for (let r = boxStartRow; r < boxStartRow + level.boxRows; r += 1) {
-    for (let c = boxStartCol; c < boxStartCol + level.boxCols; c += 1) {
-      if (r === row && c === col) {
-        continue;
-      }
-      if (board[r][c] === value) {
-        return false;
+    for (let r = boxStartRow; r < boxStartRow + level.boxRows; r += 1) {
+      for (let c = boxStartCol; c < boxStartCol + level.boxCols; c += 1) {
+        if (r === row && c === col) {
+          continue;
+        }
+        if (board[r][c] === value) {
+          return false;
+        }
       }
     }
   }

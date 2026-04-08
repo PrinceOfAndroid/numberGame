@@ -127,13 +127,31 @@ body {
 .cell {
   aspect-ratio: 1 / 1;
   min-height: 52px;
-  border: 2px solid #6f5a45;
+  border-style: solid;
+  border-color: #6f5a45;
+  border-width: 1.5px;
   display: grid;
   place-items: center;
   font-size: clamp(1.4rem, 3.6vw, 2rem);
   background: #fff;
   cursor: pointer;
   transition: background-color 140ms ease, transform 120ms ease;
+}
+
+.cell.box-top {
+  border-top-width: 4px;
+}
+
+.cell.box-left {
+  border-left-width: 4px;
+}
+
+.cell.box-bottom {
+  border-bottom-width: 4px;
+}
+
+.cell.box-right {
+  border-right-width: 4px;
 }
 
 .cell:hover {
