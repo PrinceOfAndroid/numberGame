@@ -68,7 +68,197 @@ const state = levels.map((lv) => ({
   completed: false,
 }));
 
+const audio = {
+  ctx: null,
+  masterGain: null,
+  bgmStarted: false,
+  bgmTimer: null,
+  bgmNextTime: 0,
+  bgmStep: 0,
+  tempo: 108,
+  melody: [523.25, 659.25, 783.99, 659.25, 698.46, 659.25, 587.33, null],
+
+  ensureContext() {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) {
+      return null;
+    }
+
+    if (!this.ctx) {
+      this.ctx = new AudioCtx();
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.value = 0.22;
+      this.masterGain.connect(this.ctx.destination);
+    }
+
+    if (this.ctx.state === "suspended") {
+      this.ctx.resume();
+    }
+
+    return this.ctx;
+  },
+
+  unlock() {
+    if (!this.ensureContext()) {
+      return;
+    }
+    if (!this.bgmStarted) {
+      this.startBgm();
+    }
+  },
+
+  playToneAt(freq, duration, startTime, options = {}) {
+    const ctx = this.ensureContext();
+    if (!ctx || !this.masterGain) {
+      return;
+    }
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const attack = options.attack ?? 0.008;
+    const release = options.release ?? duration;
+    const volume = options.volume ?? 0.06;
+
+    osc.type = options.type ?? "sine";
+    osc.frequency.setValueAtTime(freq, startTime);
+    if (options.detune) {
+      osc.detune.setValueAtTime(options.detune, startTime);
+    }
+
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.linearRampToValueAtTime(volume, startTime + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + release);
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.02);
+  },
+
+  playTone(freq, duration, options = {}) {
+    const ctx = this.ensureContext();
+    if (!ctx) {
+      return;
+    }
+    this.playToneAt(freq, duration, ctx.currentTime, options);
+  },
+
+  startBgm() {
+    const ctx = this.ensureContext();
+    if (!ctx || this.bgmStarted) {
+      return;
+    }
+
+    this.bgmStarted = true;
+    this.bgmNextTime = ctx.currentTime + 0.05;
+    this.bgmStep = 0;
+
+    this.bgmTimer = window.setInterval(() => {
+      if (!this.ctx) {
+        return;
+      }
+
+      const lookAhead = 0.3;
+      const beat = 60 / this.tempo / 2;
+
+      while (this.bgmNextTime < this.ctx.currentTime + lookAhead) {
+        const note = this.melody[this.bgmStep % this.melody.length];
+        if (note) {
+          this.playToneAt(note, 0.24, this.bgmNextTime, {
+            type: "triangle",
+            volume: 0.028,
+            attack: 0.01,
+            release: 0.22,
+          });
+        }
+
+        if (this.bgmStep % 4 === 0) {
+          this.playToneAt(261.63, 0.3, this.bgmNextTime, {
+            type: "sine",
+            volume: 0.02,
+            attack: 0.01,
+            release: 0.28,
+          });
+        }
+
+        this.bgmNextTime += beat;
+        this.bgmStep += 1;
+      }
+    }, 80);
+  },
+
+  playClick() {
+    this.playTone(930, 0.06, {
+      type: "square",
+      volume: 0.045,
+      attack: 0.003,
+      release: 0.05,
+    });
+  },
+
+  playCorrect() {
+    const ctx = this.ensureContext();
+    if (!ctx) {
+      return;
+    }
+    const t = ctx.currentTime;
+    this.playToneAt(660, 0.08, t, { type: "triangle", volume: 0.07, release: 0.07 });
+    this.playToneAt(880, 0.12, t + 0.09, { type: "triangle", volume: 0.08, release: 0.11 });
+  },
+
+  playWrong() {
+    const ctx = this.ensureContext();
+    if (!ctx) {
+      return;
+    }
+    const t = ctx.currentTime;
+    this.playToneAt(320, 0.09, t, { type: "sawtooth", volume: 0.07, release: 0.08 });
+    this.playToneAt(220, 0.12, t + 0.1, { type: "sawtooth", volume: 0.08, release: 0.11 });
+  },
+
+  playSpeech(word) {
+    if (!("speechSynthesis" in window)) {
+      return false;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(word);
+    utterance.lang = "en-US";
+    utterance.rate = 1;
+    utterance.pitch = 1.05;
+    utterance.volume = 0.95;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+    return true;
+  },
+
+  playAmazing() {
+    if (this.playSpeech("Amazing")) {
+      return;
+    }
+    this.playTone(784, 0.16, { type: "triangle", volume: 0.09 });
+    this.playTone(988, 0.18, { type: "triangle", volume: 0.09 });
+  },
+
+  playUnbelievable() {
+    if (this.playSpeech("Unbelievable")) {
+      return;
+    }
+    this.playTone(523, 0.14, { type: "triangle", volume: 0.09 });
+    this.playTone(659, 0.14, { type: "triangle", volume: 0.09 });
+    this.playTone(1046, 0.22, { type: "triangle", volume: 0.1 });
+  },
+};
+
+function setupAudioUnlock() {
+  const unlockAudio = () => audio.unlock();
+  document.addEventListener("pointerdown", unlockAudio, { once: true });
+  document.addEventListener("keydown", unlockAudio, { once: true });
+}
+
 function init() {
+  setupAudioUnlock();
+  audio.unlock();
+
   levels.forEach((level, idx) => {
     renderBoard(level, idx);
     renderChoices(level, idx);
@@ -107,7 +297,10 @@ function renderBoard(level, levelIndex) {
       if (fixed) {
         cell.classList.add("fixed");
       }
-      cell.addEventListener("click", () => selectCell(levelIndex, r, c));
+      cell.addEventListener("click", () => {
+        audio.playClick();
+        selectCell(levelIndex, r, c);
+      });
       boardEl.appendChild(cell);
     }
   }
@@ -122,7 +315,10 @@ function renderChoices(level, levelIndex) {
     btn.type = "button";
     btn.className = "choice-btn";
     btn.textContent = token;
-    btn.addEventListener("click", () => placeToken(levelIndex, token));
+    btn.addEventListener("click", () => {
+      audio.playClick();
+      placeToken(levelIndex, token);
+    });
     choicesEl.appendChild(btn);
   });
 }
@@ -130,12 +326,16 @@ function renderChoices(level, levelIndex) {
 function bindNextButton(level, levelIndex) {
   if (levelIndex < levels.length - 1) {
     const nextBtn = document.getElementById(`next-${level.id}`);
-    nextBtn.addEventListener("click", () => showLevel(levelIndex + 1));
+    nextBtn.addEventListener("click", () => {
+      audio.playClick();
+      showLevel(levelIndex + 1);
+    });
     return;
   }
 
   const finishBtn = document.getElementById("finish-3");
   finishBtn.addEventListener("click", () => {
+    audio.playClick();
     const message = document.getElementById("message-3");
     message.textContent = "你太棒啦，三关全部通过！";
   });
@@ -166,8 +366,14 @@ function placeToken(levelIndex, token) {
 
   const { row, col } = currentState.selected;
   currentState.current[row][col] = token;
+  const isValid = isMoveValid(levelIndex, row, col, token);
 
   paintBoard(levelIndex);
+  if (isValid) {
+    audio.playCorrect();
+  } else {
+    audio.playWrong();
+  }
   checkCompletion(levelIndex);
 }
 
@@ -289,9 +495,11 @@ function showPassResult(levelIndex) {
   const message = document.getElementById(`message-${level.id}`);
 
   if (levelIndex < levels.length - 1) {
+    audio.playAmazing();
     message.textContent = "恭喜过关！准备进入下一关吧！";
     document.getElementById(`next-${level.id}`).classList.remove("hidden");
   } else {
+    audio.playUnbelievable();
     message.textContent = "恭喜你，所有关卡都完成啦！";
     document.getElementById("finish-3").classList.remove("hidden");
   }
