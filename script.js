@@ -364,20 +364,23 @@ const audio = {
     }
 
     const t = ctx.currentTime;
-    const notes = [659.25, 783.99, 987.77, 1318.51];
-    notes.forEach((note, i) => {
-      this.playToneAt(note, 0.14, t + i * 0.08, {
+    const run = [783.99, 987.77, 1174.66, 1318.51, 1567.98];
+    run.forEach((note, i) => {
+      this.playToneAt(note, 0.11, t + i * 0.065, {
         type: "triangle",
-        volume: 0.11,
-        attack: 0.005,
-        release: 0.13,
+        volume: 0.12,
+        attack: 0.004,
+        release: 0.1,
       });
     });
-    this.playToneAt(1975.53, 0.18, t + 0.33, {
-      type: "sine",
-      volume: 0.08,
-      attack: 0.004,
-      release: 0.16,
+
+    [1318.51, 1567.98, 1975.53].forEach((note) => {
+      this.playToneAt(note, 0.2, t + 0.34, {
+        type: "sine",
+        volume: 0.08,
+        attack: 0.003,
+        release: 0.18,
+      });
     });
   },
 
@@ -392,22 +395,31 @@ const audio = {
     }
 
     const t = ctx.currentTime;
-    const run = [523.25, 659.25, 783.99, 987.77, 1174.66, 1318.51];
-    run.forEach((note, i) => {
-      this.playToneAt(note, 0.12, t + i * 0.07, {
+    const leapRun = [659.25, 783.99, 1046.5, 1174.66, 1567.98, 1760];
+    leapRun.forEach((note, i) => {
+      this.playToneAt(note, 0.1, t + i * 0.055, {
         type: "triangle",
-        volume: 0.11,
+        volume: 0.125,
         attack: 0.004,
-        release: 0.11,
+        release: 0.09,
       });
     });
 
-    [1046.5, 1318.51, 1567.98].forEach((note) => {
-      this.playToneAt(note, 0.28, t + 0.45, {
-        type: "square",
-        volume: 0.1,
+    [1318.51, 1567.98, 1975.53].forEach((note) => {
+      this.playToneAt(note, 0.26, t + 0.34, {
+        type: "sine",
+        volume: 0.09,
         attack: 0.004,
-        release: 0.26,
+        release: 0.24,
+      });
+    });
+
+    [2093, 2637.02].forEach((note, i) => {
+      this.playToneAt(note, 0.18, t + 0.58 + i * 0.05, {
+        type: "triangle",
+        volume: 0.08,
+        attack: 0.003,
+        release: 0.16,
       });
     });
   },
