@@ -71,7 +71,10 @@ const state = levels.map((lv) => ({
 const audio = {
   ctx: null,
   masterGain: null,
+  bgmGain: null,
+  sfxGain: null,
   bgmStarted: false,
+  bgmStopped: false,
   bgmTimer: null,
   bgmNextTime: 0,
   bgmStep: 0,
@@ -87,7 +90,13 @@ const audio = {
     if (!this.ctx) {
       this.ctx = new AudioCtx();
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = 0.22;
+      this.masterGain.gain.value = 0.24;
+      this.bgmGain = this.ctx.createGain();
+      this.sfxGain = this.ctx.createGain();
+      this.bgmGain.gain.value = 0.65;
+      this.sfxGain.gain.value = 1;
+      this.bgmGain.connect(this.masterGain);
+      this.sfxGain.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
     }
 
@@ -102,14 +111,14 @@ const audio = {
     if (!this.ensureContext()) {
       return;
     }
-    if (!this.bgmStarted) {
+    if (!this.bgmStarted && !this.bgmStopped) {
       this.startBgm();
     }
   },
 
   playToneAt(freq, duration, startTime, options = {}) {
     const ctx = this.ensureContext();
-    if (!ctx || !this.masterGain) {
+    if (!ctx || !this.masterGain || !this.bgmGain || !this.sfxGain) {
       return;
     }
 
@@ -129,8 +138,10 @@ const audio = {
     gain.gain.linearRampToValueAtTime(volume, startTime + attack);
     gain.gain.exponentialRampToValueAtTime(0.0001, startTime + release);
 
+    const targetBus = options.bus === "bgm" ? this.bgmGain : this.sfxGain;
+
     osc.connect(gain);
-    gain.connect(this.masterGain);
+    gain.connect(targetBus);
     osc.start(startTime);
     osc.stop(startTime + duration + 0.02);
   },
@@ -145,7 +156,7 @@ const audio = {
 
   startBgm() {
     const ctx = this.ensureContext();
-    if (!ctx || this.bgmStarted) {
+    if (!ctx || this.bgmStarted || this.bgmStopped) {
       return;
     }
 
@@ -169,6 +180,7 @@ const audio = {
             volume: 0.028,
             attack: 0.01,
             release: 0.22,
+            bus: "bgm",
           });
         }
 
@@ -178,6 +190,7 @@ const audio = {
             volume: 0.02,
             attack: 0.01,
             release: 0.28,
+            bus: "bgm",
           });
         }
 
@@ -185,6 +198,22 @@ const audio = {
         this.bgmStep += 1;
       }
     }, 80);
+  },
+
+  stopBgm() {
+    this.bgmStopped = true;
+    if (this.bgmTimer) {
+      window.clearInterval(this.bgmTimer);
+      this.bgmTimer = null;
+    }
+    this.bgmStarted = false;
+
+    if (this.ctx && this.bgmGain) {
+      const t = this.ctx.currentTime;
+      this.bgmGain.gain.cancelScheduledValues(t);
+      this.bgmGain.gain.setValueAtTime(this.bgmGain.gain.value, t);
+      this.bgmGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    }
   },
 
   playClick() {
@@ -216,43 +245,70 @@ const audio = {
     this.playToneAt(220, 0.12, t + 0.1, { type: "sawtooth", volume: 0.08, release: 0.11 });
   },
 
-  playSpeech(word) {
-    if (!("speechSynthesis" in window)) {
-      return false;
-    }
-
-    const utterance = new SpeechSynthesisUtterance(word);
-    utterance.lang = "en-US";
-    utterance.rate = 1;
-    utterance.pitch = 1.05;
-    utterance.volume = 0.95;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utterance);
-    return true;
-  },
-
   playAmazing() {
-    if (this.playSpeech("Amazing")) {
+    const ctx = this.ensureContext();
+    if (!ctx) {
       return;
     }
-    this.playTone(784, 0.16, { type: "triangle", volume: 0.09 });
-    this.playTone(988, 0.18, { type: "triangle", volume: 0.09 });
+
+    const t = ctx.currentTime;
+    const notes = [659.25, 783.99, 987.77, 1318.51];
+    notes.forEach((note, i) => {
+      this.playToneAt(note, 0.14, t + i * 0.08, {
+        type: "triangle",
+        volume: 0.11,
+        attack: 0.005,
+        release: 0.13,
+      });
+    });
+    this.playToneAt(1975.53, 0.18, t + 0.33, {
+      type: "sine",
+      volume: 0.08,
+      attack: 0.004,
+      release: 0.16,
+    });
   },
 
   playUnbelievable() {
-    if (this.playSpeech("Unbelievable")) {
+    const ctx = this.ensureContext();
+    if (!ctx) {
       return;
     }
-    this.playTone(523, 0.14, { type: "triangle", volume: 0.09 });
-    this.playTone(659, 0.14, { type: "triangle", volume: 0.09 });
-    this.playTone(1046, 0.22, { type: "triangle", volume: 0.1 });
+
+    const t = ctx.currentTime;
+    const run = [523.25, 659.25, 783.99, 987.77, 1174.66, 1318.51];
+    run.forEach((note, i) => {
+      this.playToneAt(note, 0.12, t + i * 0.07, {
+        type: "triangle",
+        volume: 0.11,
+        attack: 0.004,
+        release: 0.11,
+      });
+    });
+
+    [1046.5, 1318.51, 1567.98].forEach((note) => {
+      this.playToneAt(note, 0.28, t + 0.45, {
+        type: "square",
+        volume: 0.1,
+        attack: 0.004,
+        release: 0.26,
+      });
+    });
   },
 };
 
 function setupAudioUnlock() {
   const unlockAudio = () => audio.unlock();
-  document.addEventListener("pointerdown", unlockAudio, { once: true });
-  document.addEventListener("keydown", unlockAudio, { once: true });
+
+  window.addEventListener("load", unlockAudio, { once: true });
+  document.addEventListener("pointerdown", unlockAudio);
+  document.addEventListener("touchstart", unlockAudio, { passive: true });
+  document.addEventListener("keydown", unlockAudio);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      unlockAudio();
+    }
+  });
 }
 
 function init() {
@@ -499,6 +555,7 @@ function showPassResult(levelIndex) {
     message.textContent = "恭喜过关！准备进入下一关吧！";
     document.getElementById(`next-${level.id}`).classList.remove("hidden");
   } else {
+    audio.stopBgm();
     audio.playUnbelievable();
     message.textContent = "恭喜你，所有关卡都完成啦！";
     document.getElementById("finish-3").classList.remove("hidden");
