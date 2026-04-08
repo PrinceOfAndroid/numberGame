@@ -1,4 +1,4 @@
-const levels = [
+const levelConfigs = [
   {
     id: 1,
     size: 3,
@@ -6,61 +6,118 @@ const levels = [
     boxCols: 3,
     highlightBox: false,
     validateBox: false,
+    blankCount: 4,
     tokens: ["🐶", "🐱", "🐰"],
-    solution: [
-      ["🐶", "🐱", "🐰"],
-      ["🐱", "🐰", "🐶"],
-      ["🐰", "🐶", "🐱"],
-    ],
-    puzzle: [
-      ["🐶", "", "🐰"],
-      ["", "🐰", ""],
-      ["🐰", "", "🐱"],
-    ],
   },
   {
     id: 2,
     size: 4,
     boxRows: 2,
     boxCols: 2,
+    highlightBox: true,
+    validateBox: true,
+    blankCount: 8,
     tokens: ["1", "2", "3", "4"],
-    solution: [
-      ["1", "2", "3", "4"],
-      ["3", "4", "1", "2"],
-      ["2", "1", "4", "3"],
-      ["4", "3", "2", "1"],
-    ],
-    puzzle: [
-      ["1", "", "", "4"],
-      ["", "4", "1", ""],
-      ["2", "", "4", ""],
-      ["", "3", "", "1"],
-    ],
   },
   {
     id: 3,
     size: 6,
     boxRows: 2,
     boxCols: 3,
+    highlightBox: true,
+    validateBox: true,
+    blankCount: 18,
     tokens: ["1", "2", "3", "4", "5", "6"],
-    solution: [
-      ["1", "2", "3", "4", "5", "6"],
-      ["4", "5", "6", "1", "2", "3"],
-      ["2", "3", "4", "5", "6", "1"],
-      ["5", "6", "1", "2", "3", "4"],
-      ["3", "4", "5", "6", "1", "2"],
-      ["6", "1", "2", "3", "4", "5"],
-    ],
-    puzzle: [
-      ["1", "", "3", "", "5", ""],
-      ["", "5", "", "1", "", "3"],
-      ["2", "", "", "5", "6", ""],
-      ["", "6", "", "", "3", "4"],
-      ["3", "", "5", "", "", "2"],
-      ["", "1", "", "3", "", "5"],
-    ],
   },
 ];
+
+function shuffleInPlace(arr) {
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function makeShuffledRange(n) {
+  return shuffleInPlace(Array.from({ length: n }, (_, i) => i));
+}
+
+function makeRowOrder(level) {
+  if (level.validateBox === false) {
+    return makeShuffledRange(level.size);
+  }
+
+  const groupCount = level.size / level.boxRows;
+  const groupOrder = makeShuffledRange(groupCount);
+  const rows = [];
+
+  groupOrder.forEach((group) => {
+    const innerOrder = makeShuffledRange(level.boxRows);
+    innerOrder.forEach((offset) => rows.push(group * level.boxRows + offset));
+  });
+
+  return rows;
+}
+
+function makeColOrder(level) {
+  if (level.validateBox === false) {
+    return makeShuffledRange(level.size);
+  }
+
+  const groupCount = level.size / level.boxCols;
+  const groupOrder = makeShuffledRange(groupCount);
+  const cols = [];
+
+  groupOrder.forEach((group) => {
+    const innerOrder = makeShuffledRange(level.boxCols);
+    innerOrder.forEach((offset) => cols.push(group * level.boxCols + offset));
+  });
+
+  return cols;
+}
+
+function getPatternValueIndex(level, row, col) {
+  if (level.validateBox === false) {
+    return (row + col) % level.size;
+  }
+
+  return (
+    (level.boxCols * (row % level.boxRows) + Math.floor(row / level.boxRows) + col) %
+    level.size
+  );
+}
+
+function generateRandomLevel(levelConfig) {
+  const tokenOrder = [...levelConfig.tokens];
+  const rowOrder = makeRowOrder(levelConfig);
+  const colOrder = makeColOrder(levelConfig);
+  shuffleInPlace(tokenOrder);
+
+  const solution = rowOrder.map((row) =>
+    colOrder.map((col) => tokenOrder[getPatternValueIndex(levelConfig, row, col)]),
+  );
+
+  const puzzle = solution.map((row) => [...row]);
+  const total = levelConfig.size * levelConfig.size;
+  const blankCount = Math.min(levelConfig.blankCount ?? Math.floor(total * 0.5), total - 1);
+  const positions = makeShuffledRange(total);
+
+  for (let i = 0; i < blankCount; i += 1) {
+    const pos = positions[i];
+    const r = Math.floor(pos / levelConfig.size);
+    const c = pos % levelConfig.size;
+    puzzle[r][c] = "";
+  }
+
+  return {
+    ...levelConfig,
+    solution,
+    puzzle,
+  };
+}
+
+const levels = levelConfigs.map((config) => generateRandomLevel(config));
 
 const state = levels.map((lv) => ({
   selected: null,
