@@ -80,6 +80,10 @@ const audio = {
   bgmStep: 0,
   tempo: 108,
   melody: [523.25, 659.25, 783.99, 659.25, 698.46, 659.25, 587.33, null],
+  unlockHintEl: null,
+  autoRetryTimer: null,
+  voiceClips: { amazing: null, unbelievable: null },
+  voiceReady: { amazing: false, unbelievable: false },
 
   ensureContext() {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -99,21 +103,98 @@ const audio = {
       this.sfxGain.connect(this.masterGain);
       this.masterGain.connect(this.ctx.destination);
     }
-
-    if (this.ctx.state === "suspended") {
-      this.ctx.resume();
-    }
-
     return this.ctx;
   },
 
-  unlock() {
-    if (!this.ensureContext()) {
+  initVoiceClips() {
+    const setupClip = (key, src) => {
+      const clip = new Audio(src);
+      clip.preload = "auto";
+      clip.volume = 0.95;
+      clip.addEventListener("canplaythrough", () => {
+        this.voiceReady[key] = true;
+      });
+      clip.addEventListener("error", () => {
+        this.voiceReady[key] = false;
+      });
+      this.voiceClips[key] = clip;
+      clip.load();
+    };
+
+    setupClip("amazing", "./assets/audio/amazing.mp3");
+    setupClip("unbelievable", "./assets/audio/unbelievable.mp3");
+  },
+
+  showUnlockHint() {
+    if (this.unlockHintEl || this.bgmStopped) {
       return;
     }
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "audio-unlock-hint";
+    btn.textContent = "点我开启声音";
+    btn.addEventListener("click", () => {
+      this.playClick();
+      this.unlock();
+    });
+    document.body.appendChild(btn);
+    this.unlockHintEl = btn;
+  },
+
+  hideUnlockHint() {
+    if (!this.unlockHintEl) {
+      return;
+    }
+    this.unlockHintEl.remove();
+    this.unlockHintEl = null;
+  },
+
+  syncUnlockHint() {
+    if (this.bgmStopped) {
+      this.hideUnlockHint();
+      return;
+    }
+
+    if (this.ctx && this.ctx.state === "running" && this.bgmStarted) {
+      this.hideUnlockHint();
+    } else {
+      this.showUnlockHint();
+    }
+  },
+
+  startAutoRetry() {
+    if (this.autoRetryTimer) {
+      return;
+    }
+
+    this.autoRetryTimer = window.setInterval(() => {
+      if (this.bgmStopped) {
+        window.clearInterval(this.autoRetryTimer);
+        this.autoRetryTimer = null;
+        return;
+      }
+
+      this.unlock();
+      if (this.ctx && this.ctx.state === "running" && this.bgmStarted) {
+        window.clearInterval(this.autoRetryTimer);
+        this.autoRetryTimer = null;
+        this.hideUnlockHint();
+      }
+    }, 1200);
+  },
+
+  unlock() {
+    const ctx = this.ensureContext();
+    if (!ctx) {
+      return;
+    }
+
+    ctx.resume().catch(() => {});
     if (!this.bgmStarted && !this.bgmStopped) {
       this.startBgm();
     }
+    this.syncUnlockHint();
   },
 
   playToneAt(freq, duration, startTime, options = {}) {
@@ -159,6 +240,10 @@ const audio = {
     if (!ctx || this.bgmStarted || this.bgmStopped) {
       return;
     }
+    if (ctx.state !== "running") {
+      this.syncUnlockHint();
+      return;
+    }
 
     this.bgmStarted = true;
     this.bgmNextTime = ctx.currentTime + 0.05;
@@ -166,6 +251,10 @@ const audio = {
 
     this.bgmTimer = window.setInterval(() => {
       if (!this.ctx) {
+        return;
+      }
+      if (this.ctx.state !== "running") {
+        this.syncUnlockHint();
         return;
       }
 
@@ -207,6 +296,11 @@ const audio = {
       this.bgmTimer = null;
     }
     this.bgmStarted = false;
+    this.hideUnlockHint();
+    if (this.autoRetryTimer) {
+      window.clearInterval(this.autoRetryTimer);
+      this.autoRetryTimer = null;
+    }
 
     if (this.ctx && this.bgmGain) {
       const t = this.ctx.currentTime;
@@ -245,7 +339,25 @@ const audio = {
     this.playToneAt(220, 0.12, t + 0.1, { type: "sawtooth", volume: 0.08, release: 0.11 });
   },
 
+  playVoiceClip(name) {
+    const clip = this.voiceClips[name];
+    if (!clip || !this.voiceReady[name]) {
+      return false;
+    }
+
+    clip.currentTime = 0;
+    const playTask = clip.play();
+    if (playTask && typeof playTask.catch === "function") {
+      playTask.catch(() => {});
+    }
+    return true;
+  },
+
   playAmazing() {
+    if (this.playVoiceClip("amazing")) {
+      return;
+    }
+
     const ctx = this.ensureContext();
     if (!ctx) {
       return;
@@ -270,6 +382,10 @@ const audio = {
   },
 
   playUnbelievable() {
+    if (this.playVoiceClip("unbelievable")) {
+      return;
+    }
+
     const ctx = this.ensureContext();
     if (!ctx) {
       return;
@@ -300,7 +416,10 @@ const audio = {
 function setupAudioUnlock() {
   const unlockAudio = () => audio.unlock();
 
-  window.addEventListener("load", unlockAudio, { once: true });
+  window.addEventListener("load", () => {
+    audio.unlock();
+    audio.startAutoRetry();
+  });
   document.addEventListener("pointerdown", unlockAudio);
   document.addEventListener("touchstart", unlockAudio, { passive: true });
   document.addEventListener("keydown", unlockAudio);
@@ -312,8 +431,10 @@ function setupAudioUnlock() {
 }
 
 function init() {
+  audio.initVoiceClips();
   setupAudioUnlock();
   audio.unlock();
+  audio.startAutoRetry();
 
   levels.forEach((level, idx) => {
     renderBoard(level, idx);

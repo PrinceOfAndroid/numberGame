@@ -250,6 +250,32 @@ body {
   display: none;
 }
 
+.audio-unlock-hint {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 99;
+  border: 3px solid var(--line);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffd86f, #ffad66);
+  color: #4f2d16;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  box-shadow: 0 6px 0 #00000028;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .audio-unlock-hint {
+    right: 10px;
+    bottom: 10px;
+    font-size: 0.9rem;
+    padding: 9px 12px;
+  }
+}
+
 @media (max-width: 640px) {
   .game-shell {
     border-radius: 18px;
