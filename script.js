@@ -130,7 +130,7 @@ const audio = {
   masterGain: null,
   bgmGain: null,
   sfxGain: null,
-  volumeScale: 2,
+  volumeScale: 3,
   bgmStarted: false,
   bgmStopped: false,
   bgmTimer: null,
@@ -408,33 +408,6 @@ const audio = {
     if (playTask && typeof playTask.catch === "function") {
       playTask.catch(() => {});
     }
-    return true;
-  },
-
-  speak(text, delayMs = 0) {
-    if (!("speechSynthesis" in window)) {
-      return false;
-    }
-
-    const doSpeak = () => {
-      const voices = window.speechSynthesis.getVoices();
-      const zhVoice =
-        voices.find((v) => v.lang && v.lang.toLowerCase().startsWith("zh")) || null;
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "zh-CN";
-      utterance.rate = 1.03;
-      utterance.pitch = 1.08;
-      utterance.volume = 1;
-      if (zhVoice) {
-        utterance.voice = zhVoice;
-      }
-
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
-    };
-
-    window.setTimeout(doSpeak, delayMs);
     return true;
   },
 
@@ -770,13 +743,11 @@ function showPassResult(levelIndex) {
 
   if (levelIndex < levels.length - 1) {
     audio.playAmazing();
-    audio.speak("太棒啦！", 180);
     message.textContent = "恭喜过关！准备进入下一关吧！";
     document.getElementById(`next-${level.id}`).classList.remove("hidden");
   } else {
     audio.stopBgm();
     audio.playUnbelievable();
-    audio.speak("恭喜闯关成功！", 220);
     message.textContent = "恭喜你，所有关卡都完成啦！";
     document.getElementById("finish-3").classList.remove("hidden");
   }
