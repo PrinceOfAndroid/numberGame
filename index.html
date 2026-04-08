@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>小小数独冒险</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="hero">
+        <h1>小小数独冒险</h1>
+        <p>点击格子，再点击下方图形或数字来填空。</p>
+      </header>
+
+      <section id="screen-1" class="level-screen active" aria-labelledby="level1-title">
+        <div class="level-head">
+          <h2 id="level1-title">第一关 · 图形 3×3</h2>
+          <p>规则：行、列、宫都不能重复。</p>
+        </div>
+        <div class="board-wrap">
+          <div id="board-1" class="board board-3" role="grid" aria-label="第一关棋盘"></div>
+        </div>
+        <div id="choices-1" class="choices" aria-label="第一关可选图形"></div>
+        <div class="status-row">
+          <p id="message-1" class="message"></p>
+          <button id="next-1" class="next-btn hidden" type="button">下一关</button>
+        </div>
+      </section>
+
+      <section id="screen-2" class="level-screen" aria-labelledby="level2-title">
+        <div class="level-head">
+          <h2 id="level2-title">第二关 · 数字 4×4</h2>
+          <p>规则：行、列、宫都不能重复。</p>
+        </div>
+        <div class="board-wrap">
+          <div id="board-2" class="board board-4" role="grid" aria-label="第二关棋盘"></div>
+        </div>
+        <div id="choices-2" class="choices" aria-label="第二关可选数字"></div>
+        <div class="status-row">
+          <p id="message-2" class="message"></p>
+          <button id="next-2" class="next-btn hidden" type="button">下一关</button>
+        </div>
+      </section>
+
+      <section id="screen-3" class="level-screen" aria-labelledby="level3-title">
+        <div class="level-head">
+          <h2 id="level3-title">第三关 · 数字 6×6</h2>
+          <p>规则：行、列、宫都不能重复。</p>
+        </div>
+        <div class="board-wrap">
+          <div id="board-3" class="board board-6" role="grid" aria-label="第三关棋盘"></div>
+        </div>
+        <div id="choices-3" class="choices" aria-label="第三关可选数字"></div>
+        <div class="status-row">
+          <p id="message-3" class="message"></p>
+          <button id="finish-3" class="next-btn hidden" type="button">全部通关</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>

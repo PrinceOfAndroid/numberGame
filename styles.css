@@ -1,0 +1,254 @@
+:root {
+  --bg-top: #9fe8ff;
+  --bg-bottom: #fef7be;
+  --card: #ffffff;
+  --ink: #3d2b1f;
+  --accent-a: #ff9f68;
+  --accent-b: #6ec9ff;
+  --accent-c: #9be66f;
+  --line: #3f2d22;
+  --highlight: #fff5a6;
+  --correct: #8be7a4;
+  --wrong: #ff9aa4;
+  --fixed: #eaf4ff;
+  --choice: #fff9f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Baloo 2", "LXGW WenKai", "Comic Sans MS", "Marker Felt", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 12% 15%, #ffffffb3 0, #ffffff00 24%),
+    radial-gradient(circle at 85% 30%, #ffffffa8 0, #ffffff00 27%),
+    linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+  display: flex;
+  justify-content: center;
+  padding: 24px 12px;
+}
+
+.game-shell {
+  width: min(860px, 100%);
+  background: #ffffffc9;
+  border: 4px solid var(--line);
+  border-radius: 28px;
+  box-shadow: 0 14px 0 #0000001a;
+  padding: 18px 18px 22px;
+}
+
+.hero {
+  text-align: center;
+  background: linear-gradient(135deg, #ffd06d, #ffa694);
+  border: 3px solid var(--line);
+  border-radius: 22px;
+  padding: 14px 10px;
+}
+
+.hero h1 {
+  margin: 0 0 2px;
+  font-size: clamp(1.65rem, 2.8vw, 2.2rem);
+  letter-spacing: 0.02em;
+}
+
+.hero p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.level-screen {
+  display: none;
+  margin-top: 14px;
+  background: var(--card);
+  border: 3px dashed #6d4f3a;
+  border-radius: 20px;
+  padding: 14px 12px 18px;
+}
+
+.level-screen.active {
+  display: block;
+  animation: pop-in 240ms ease-out;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.level-head h2 {
+  margin: 0;
+  font-size: clamp(1.2rem, 2.2vw, 1.6rem);
+}
+
+.level-head p {
+  margin: 2px 0 10px;
+  font-size: 0.95rem;
+}
+
+.board-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.board {
+  display: grid;
+  border: 4px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  user-select: none;
+}
+
+.board-3 {
+  grid-template-columns: repeat(3, 1fr);
+  width: min(90vw, 324px);
+}
+
+.board-4 {
+  grid-template-columns: repeat(4, 1fr);
+  width: min(90vw, 352px);
+}
+
+.board-6 {
+  grid-template-columns: repeat(6, 1fr);
+  width: min(92vw, 500px);
+}
+
+.cell {
+  aspect-ratio: 1 / 1;
+  min-height: 52px;
+  border: 2px solid #6f5a45;
+  display: grid;
+  place-items: center;
+  font-size: clamp(1.4rem, 3.6vw, 2rem);
+  background: #fff;
+  cursor: pointer;
+  transition: background-color 140ms ease, transform 120ms ease;
+}
+
+.cell:hover {
+  transform: scale(1.02);
+}
+
+.cell.fixed {
+  background: var(--fixed);
+  font-weight: 700;
+}
+
+.cell.selected {
+  outline: 4px solid #ff8f8f;
+  outline-offset: -4px;
+}
+
+.cell.highlight {
+  box-shadow: inset 0 0 0 999px #fff5a68f;
+}
+
+.cell.correct {
+  background: var(--correct);
+}
+
+.cell.wrong {
+  background: var(--wrong);
+}
+
+.choices {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.choice-btn {
+  min-width: 62px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border: 3px solid var(--line);
+  border-radius: 18px;
+  background: var(--choice);
+  font-size: clamp(1.2rem, 2.7vw, 1.7rem);
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 5px 0 #00000021;
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+
+.choice-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 #0000001f;
+}
+
+.choice-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 3px 0 #00000026;
+}
+
+.status-row {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+.message {
+  margin: 0;
+  min-height: 1.5em;
+  font-size: 1.04rem;
+  font-weight: 700;
+  color: #865f00;
+}
+
+.next-btn {
+  border: 3px solid var(--line);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent-c), var(--accent-b));
+  color: #163224;
+  font-weight: 800;
+  font-size: 1rem;
+  padding: 9px 18px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 5px 0 #00000020;
+}
+
+.next-btn:hover {
+  filter: saturate(1.07);
+}
+
+.next-btn.hidden {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .game-shell {
+    border-radius: 18px;
+    padding: 12px 10px 16px;
+  }
+
+  .hero {
+    border-radius: 16px;
+  }
+
+  .cell {
+    min-height: 44px;
+    border-width: 1.6px;
+  }
+
+  .choice-btn {
+    min-width: 56px;
+    min-height: 48px;
+  }
+}
